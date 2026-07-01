@@ -14,7 +14,7 @@ def index():
 def health_check():
     logging.info("Health check")
     # TODO: Add ECS 
-    return jsonify({"status": "healthy"}), 200
+    return jsonify({"status": "healthy!"}), 200
 
 if __name__ == '__main__':
     app.run(

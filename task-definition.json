@@ -1,0 +1,28 @@
+{
+    "family": "jai-backend-task",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": ["FARGATE"],
+    "cpu": "256",
+    "memory": "512",
+    "executionRoleArn": "arn:aws:iam::533590175931:role/ecsTaskExecutionRole",
+    "taskRoleArn": "arn:aws:iam::533590175931:role/ecsTaskExecutionRole",
+    "containerDefinitions": [
+        {
+            "name": "jarvis-backend",
+            "image": "533590175931.dkr.ecr.us-east-1.amazonaws.com/jai-backend:latest",
+            "essential": true,
+            "portMappings": [
+                {
+                "containerPort": 5000,
+                "protocol": "tcp"
+                }
+            ],
+            "environment": [
+                {
+                "name": "AWS_DEFAULT_REGION",
+                "value": "us-east-1"
+                }
+            ]
+        }
+    ]
+}

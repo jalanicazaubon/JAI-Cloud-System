@@ -10,10 +10,9 @@ load_dotenv()
 
 aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
 aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
-aws_region = os.getenv("AWS_DEFAULT_REGION")
-dynamodb_table_name = os.getenv("DYNAMODB_TABLE_NAME")
+dynamodb_table_name = os.getenv("DYNAMODB_TABLE_NAME", "tasks")
 
-dynamo_db = boto3.resource("dynamodb", region_name=aws_region)
+dynamo_db = boto3.resource("dynamodb", region_name="us-east-1")
 table = dynamo_db.Table(dynamodb_table_name)
 
 def create_task():
