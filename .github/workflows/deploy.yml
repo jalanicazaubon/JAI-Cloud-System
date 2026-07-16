@@ -52,6 +52,23 @@ jobs:
           docker push \
           ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}
 
+      - name: Validate ECS configuration 
+        env:
+          ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
+          ECS_SERVICE: ${{ secrets.ECS_SERVICE }}
+        run: |
+          test -n "$ECS_CLUSTER" || {
+            echo "ECS_CLUSTER is missing "
+            exit 1
+          }
+
+          test -n "$ECS_SERVICE" || {
+            echo "ECS_SERVICE is missing "
+            exit 1
+          }
+
+          echo "ECS configuration is present"
+          
       - name: Force ECS Deployment 
         run: |
           aws ecs update-service \
