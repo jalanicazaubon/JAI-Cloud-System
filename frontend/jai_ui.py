@@ -39,8 +39,40 @@ if uploaded_file:
     with st.expander("Raw OCR by day"):
         st.json(st.session_state.get("ocr", {}))
 
-    st.subheader("Detected Tasks")
-    st.json(tasks)
+    if tasks: 
+        edited_tasks = st.data_editor(
+            tasks, 
+            num_rows="dynamic", 
+            use_container_width=True, 
+            column_config={
+                "day": st.column_config.SelectboxColumn(
+                    "Day", 
+                    options=[
+                        "Sunday", 
+                        "Monday", 
+                        "Tuesday", 
+                        "Wednesday", 
+                        "Thursday", 
+                        "Friday", 
+                        "Saturday"
+                    ], 
+                    required=True
+                ),
+                "title": st.column_config.TextColumn(
+                    "Task", 
+                    required=True,
+                ), 
+                "time": st.column_config.TextColumn(
+                    "Time", 
+                )
+            },
+            hide_index=True
+        )
+
+        st.session_state.tasks = edited_tasks
+
+    else:
+        st.info("No tasks detected.")
 
     st.subheader("Summary")
     st.write(generate_summary(tasks))
