@@ -1,17 +1,7 @@
 import logging
-import os
 import uuid
-import boto3
 from botocore.exceptions import ClientError
-from dotenv import load_dotenv
-
-load_dotenv()
-
-AWS_REGION = "us-east-1"
-DYNAMODB_TABLE_NAME = os.getenv("DYNAMODB_TABLE_NAME", "tasks")
-
-dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
-table = dynamodb.Table(DYNAMODB_TABLE_NAME)
+from services.aws_clients import db_table
 
 def create_task(data):
     logging.info("Creating task")
@@ -31,10 +21,9 @@ def create_task(data):
             "day": data.get("day"),
             "title": data.get("title"),
             "time": data.get("time", "unscheduled"),
-            "priority": data.get("priority", "medium"),
         }
 
-        table.put_item(Item=task)
+        db_table.put_item(Item=task)
 
         return task, 201
 
@@ -49,7 +38,7 @@ def get_all_tasks():
     logging.info("Getting tasks")
 
     try:
-        response = table.scan()
+        response = db_table.scan()
         return response.get("Items", []), 200
 
     except ClientError as e:
@@ -66,7 +55,7 @@ def get_task_by_id(task_id):
         if not task_id:
             return {"error": "Task ID is required"}, 400
 
-        response = table.get_item(
+        response = db_table.get_item(
             Key={"task_id": task_id}
         )
 
@@ -94,7 +83,7 @@ def update_task(task_id, data):
         if not data:
             return {"error": "Request body is required"}, 400
 
-        fields = ["day", "title", "time", "priority"]
+        fields = ["day", "title", "time"]
         updates = []
         expression_values = {}
 
@@ -106,7 +95,7 @@ def update_task(task_id, data):
         if not updates:
             return {"error": "No valid fields provided"}, 400
 
-        response = table.update_item(
+        response = db_table.update_item(
             Key={"task_id": task_id},
             UpdateExpression="SET " + ", ".join(updates),
             ExpressionAttributeValues=expression_values,
@@ -129,7 +118,7 @@ def delete_task(task_id):
         if not task_id:
             return {"error": "Task ID is required"}, 400
 
-        response = table.delete_item(
+        response = db_table.delete_item(
             Key={"task_id": task_id},
             ReturnValues="ALL_OLD",
         )

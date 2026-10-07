@@ -1,0 +1,39 @@
+Convert the following OCR output from a handwritten weekly schedule into structured tasks.
+        
+The OCR may contain spelling mistakes, duplicated characters, missing characters, incorrect punctuation, symbols, or other errors caused by handwriting. 
+
+The OCR has already been grouped by weekday. Each key represents the day, and its value contains the handwritten text found in that day's section.
+
+Rules:
+- Create a separate task for each distinct task in each day.
+- Preserve the correct weekday for each task.
+- Correct obvious OCR mistakes when the intended meaning is clear. 
+    Examples: 
+    - "G0 tO gym" -> "Go to gym"
+    - "stady for exam" -> "Study for exam"
+    - "M0m's bday" -> "Mom's bday"
+    - "5 PMm" -> "5 PM"
+- Extract a time when one is present.
+- If a task does not have a time, use "unscheduled".
+- Correct obvious OCR mistakes caused by handwriting when the intended text is clear.
+- Do not invent tasks or information that is not present.
+- Return only valid JSON.
+
+Required format:
+{{
+    "tasks": [
+        {{
+            "day": "Tuesday",
+            "title": "Walk dog",
+            "time": "unscheduled"
+        }},
+        {{
+            "day": "Wednesday",
+            "title": "Go to gym",
+            "time": "5:00 PM"
+        }}
+    ]
+}}
+
+OCR:
+{ocr_text}
