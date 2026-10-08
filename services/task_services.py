@@ -21,6 +21,7 @@ def create_task(data):
             "day": data.get("day"),
             "title": data.get("title"),
             "time": data.get("time", "unscheduled"),
+            "completed": data.get("completed")
         }
 
         db_table.put_item(Item=task)
@@ -83,13 +84,16 @@ def update_task(task_id, data):
         if not data:
             return {"error": "Request body is required"}, 400
 
-        fields = ["day", "title", "time"]
+        fields = ["day", "title", "time", "completed"]
+
         updates = []
         expression_values = {}
+        expression_names = {}
 
         for field in fields:
             if field in data:
-                updates.append(f"{field} = :{field}")
+                updates.append(f"#{field} = :{field}")
+                expression_names[f"#{field}"] = field
                 expression_values[f":{field}"] = data[field]
 
         if not updates:
@@ -98,6 +102,7 @@ def update_task(task_id, data):
         response = db_table.update_item(
             Key={"task_id": task_id},
             UpdateExpression="SET " + ", ".join(updates),
+            ExpressionAttributeNames=expression_names,
             ExpressionAttributeValues=expression_values,
             ReturnValues="ALL_NEW",
         )
