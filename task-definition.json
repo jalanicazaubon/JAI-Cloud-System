@@ -21,6 +21,18 @@
                 {
                 "name": "AWS_DEFAULT_REGION",
                 "value": "us-east-1"
+                }, 
+                { 
+                    "name": "DYNAMODB_TABLE_NAME", 
+                    "value": "tasks" 
+                },
+                { 
+                    "name": "S3_BUCKET_NAME", 
+                    "value": "jai-schedule-uploads" 
+                },
+                { 
+                    "name": "BEDROCK_MODEL_ID", 
+                    "value": "amazon.nova-lite-v1:0" 
                 }
             ]
         }

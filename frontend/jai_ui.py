@@ -54,6 +54,7 @@ st.session_state.setdefault("uploader_key", 0)
 st.session_state.setdefault("flash", None)
 st.session_state.setdefault("flash_type", None)
 st.session_state.setdefault("pending_actions", None)
+st.session_state.setdefault("last_audio_id", None)
 
 st.title("JAI Lite")
 
@@ -218,7 +219,7 @@ else:
     st.info("No Tasks yet. Upload a schedule to get started")
 
 # ============================================================
-# NATURAL-LANGUAGE COMMANDS
+# CHAT COMMANDS
 # ============================================================
 
 command = st.chat_input("Tell JAI what to change...")
@@ -231,11 +232,47 @@ if command:
         st.error(f"JAI could not process that request: {response.text}")
         st.session_state.pending_actions = None
 
+# ============================================================
+# VOICE COMMANDS
+# ============================================================
+
+audio = st.audio_input("Or say it")
+
+if audio and audio.file_id != st.session_state.last_audio_id:
+    st.session_state.last_audio_id = audio.file_id
+
+    with st.spinner("Listening..."):
+        response = requests.post(
+            f"{API_BASE_URL}/tasks/voice",
+            files={"file": ("command.wav", audio.getvalue(), "audio/wav")},
+            timeout=120,
+    )
+
+    st.session_state.pending_actions = response.json()
+
+    speech = requests.post(
+        f"{API_BASE_URL}/speech", 
+        json={
+            "text": st.session_state.pending_actions["message"]
+        }, 
+        timeout=30
+    )
+
+    st.audio(speech.content, format="audio/mpeg", autoplay=True)
+
+# ============================================================
+# 
+# ============================================================
+
 if st.session_state.pending_actions: 
     result = st.session_state.pending_actions
-    actions = result.get("actions", [])
 
-    st.info(result["message"])
+    if "command" in result:
+        st.caption(f'You said: "{result["command"]}"')
+    else:
+        st.info(result["message"])
+
+    actions = result.get("actions", [])
 
     if actions:
 
@@ -261,17 +298,25 @@ if st.session_state.pending_actions:
                             f"{action['task']['title']}: "
                             f"{response.text}"
                         )
+
                 elif action["action"] == "update":
+                    title = next(
+                        task["title"]
+                        for task in tasks
+                        if task["task_id"] == action['task']['task_id']
+                    )
+
                     response = requests.put(f"{API_BASE_URL}/tasks/{action['task']['task_id']}", json=action["task"], timeout=30)
                     if response.ok:
                         updated.append(
-                            f"{action['task']['title']} for {action['task']['day']}"
+                            f"{title} for {action['task']['day']}"
                         )
                     else:
                         st.error(
                             f"Failed to update task: "
                             f"{response.text}"
                         )
+
                 elif action["action"] == "delete":
                     response = requests.delete(f"{API_BASE_URL}/tasks/{action['task']['task_id']}", timeout=30)
                     if response.ok:
@@ -299,3 +344,7 @@ if st.session_state.pending_actions:
         if cancel.button("Cancel", width="stretch"):
             st.session_state.pending_actions = None
             st.rerun()
+        
+
+
+    

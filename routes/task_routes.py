@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify 
+from flask import Blueprint, request, jsonify, Response
 from services.task_services import (
     create_task, 
     get_all_tasks, 
@@ -7,6 +7,8 @@ from services.task_services import (
     delete_task
 )
 from services.command_service import interpret_command_with_bedrock
+from services.voice_service import transcribe_audio
+from services.aws_clients import polly
 
 task_routes = Blueprint("task_routes", __name__)
 
@@ -41,3 +43,17 @@ def delete_task_route(task_id):
 def commands_route():
     result = request.get_json()
     return jsonify(interpret_command_with_bedrock(result["command"])), 200
+
+@task_routes.route("/tasks/voice", methods=["POST"])
+def voice_route():
+    file = request.files["file"]
+    command = transcribe_audio(file.stream, file.filename)
+    result = interpret_command_with_bedrock(command)
+    result["command"] = command
+    return jsonify(result), 200
+
+@task_routes.route("/speech", methods=["POST"])
+def speech_route():
+    text = request.get_json()["text"]
+    audio = polly.synthesize_speech(Text=text, OutputFormat="mp3", VoiceId="Amy")
+    return Response(audio["AudioStream"].read(), mimetype="audio/mpeg")
