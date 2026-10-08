@@ -16,7 +16,7 @@ def build_prompt(words_by_day):
 
 
 def _strip_code_fences(text):
-    return re.sub(r"^```(?:json)?\s*|\s*```$", "", text.strip(), flags=re.IGNORECASE)
+    return re.sub(r"^```(?:json)?\s*|\s*```$", "", text.strip(), flags=re.IGNORECASE) # remove Markdown code fences/ backticks from text
 
 
 def structure_tasks_with_bedrock(words_by_day):

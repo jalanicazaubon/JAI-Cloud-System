@@ -6,6 +6,7 @@ from services.task_services import (
     update_task, 
     delete_task
 )
+from services.command_service import interpret_command_with_bedrock
 
 task_routes = Blueprint("task_routes", __name__)
 
@@ -35,3 +36,8 @@ def update_task_route(task_id):
 def delete_task_route(task_id):
     result, status_code = delete_task(task_id)
     return jsonify(result), status_code
+
+@task_routes.route("/tasks/command", methods=["POST"])
+def commands_route():
+    result = request.get_json()
+    return jsonify(interpret_command_with_bedrock(result["command"])), 200

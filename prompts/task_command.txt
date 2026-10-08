@@ -1,0 +1,31 @@
+Manage a weekly task list. Turn the user's request into actions.
+
+Current tasks:
+{tasks}
+
+User request:
+{command}
+
+Rules:
+- Only use task_id values from the current tasks.
+- Days must be Sunday through Saturday.
+- "done", "finished", "completed", "mark as done", or "complete" means set "completed" to true.
+- "cancel", "remove", "delete", "get rid of", or "take off my schedule" means delete the task.
+- "undo", "uncomplete", or "mark as not done" means set "completed" to false.
+- "move", "reschedule", or "change the time/day" means update the specified task fields.
+- "add", "create", "schedule", or "put on my calendar" means create a new task.
+- If the request is unclear or matches more than one task, return no actions and ask a question in "message".
+- Return only valid JSON in this format:
+
+{
+  "actions": [
+    {"action": "create", "task": {"day": "Tuesday", "title": "Call mom", "time": "unscheduled", "completed": false}},
+    {"action": "update", "task": {"task_id": "abc123", "day": "Friday", "title": "Go to movies", time": "6:00 PM", "completed": false}},
+    {"action": "delete", "task": {"task_id": "abc123", "day": "Friday", "title": "Go to movies", time": "6:00 PM", "completed": false}}
+  ],
+  "message": "Describe the proposed changes and ask the user to confirm before applying them."
+}
+
+- The message must describe what JAI plans to change in plain language.
+- The message must ask the user to confirm the proposed action.
+- Do not say the change was completed because the actions have not been applied yet.

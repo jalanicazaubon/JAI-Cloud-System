@@ -26,13 +26,13 @@ Required format:
             "day": "Tuesday",
             "title": "Walk dog",
             "time": "unscheduled", 
-            "completed": False
+            "completed": false
         }},
         {{
             "day": "Wednesday",
             "title": "Go to gym",
             "time": "5:00 PM", 
-            "completed": False
+            "completed": false
         }}
     ]
 }}

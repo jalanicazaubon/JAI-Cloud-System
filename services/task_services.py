@@ -21,7 +21,7 @@ def create_task(data):
             "day": data.get("day"),
             "title": data.get("title"),
             "time": data.get("time", "unscheduled"),
-            "completed": data.get("completed")
+            "completed": data.get("completed", False)
         }
 
         db_table.put_item(Item=task)
