@@ -1,4 +1,3 @@
-from flask import request
 import requests
 import streamlit as st
 
@@ -24,13 +23,14 @@ def generate_summary(tasks):
 def load_tasks():
     try:
         response = requests.get(f"{API_BASE_URL}/tasks", timeout=30)
-    except request.RequestException as e:
+    except requests.RequestException as e:
         st.error(f"Could not reach the server: {e}")
         return []
     
     if not response.ok:
         st.error(f"Could not load tasks: {response.text}")
-        []
+        return []
+
     return response.json()
 
 def save_tasks(new_tasks):
@@ -53,16 +53,12 @@ st.session_state.setdefault("last_file_id", None)
 st.session_state.setdefault("uploader_key", 0)
 st.session_state.setdefault("flash", None)
 st.session_state.setdefault("flash_type", None)
+st.session_state.setdefault("pending_actions", None)
 
 st.title("JAI Lite")
 
 if st.session_state.flash:
-    if st.session_state.flash_type == "create":
-        st.success(st.session_state.flash)
-    elif st.session_state.flash_type == "update":
-        st.warning(st.session_state.flash)
-    elif st.session_state.flash_type == "delete": 
-        st.error(st.session_state.flash)
+    st.success(st.session_state.flash)
 
     st.session_state.flash = None
     st.session_state.flash_type = None
@@ -117,7 +113,6 @@ if st.session_state.pending_tasks is not None:
         response = save_tasks(new_tasks)
 
         st.session_state.flash = f"Created {len(new_tasks)} new tasks."
-        st.session_state.flash_type = "create"
         st.session_state.pending_tasks = None
         st.session_state.last_file_id = None
         st.session_state.uploader_key += 1 # clear the uploader
@@ -129,8 +124,8 @@ if st.session_state.pending_tasks is not None:
         st.session_state.uploader_key += 1
         st.rerun()
 
-# ============================================================
-# MAIN TABLE (always loaded from the backend)
+# ====================================================
+# MAIN TABLE 
 # ============================================================
 
 tasks = load_tasks()
@@ -186,9 +181,8 @@ if tasks:
                     st.error(f"Failed to update {row['title']}: {response.text}")
 
             st.session_state.flash  = (
-                f"Updated: {', '.join(task['title'] for task in updated_tasks)}"
+                f"Updated: {', '.join(f"{task['title']} for {task['day']}" for task in updated_tasks)}"
             )
-            st.session_state.flash_type = "update"
 
             st.rerun()
 
@@ -210,12 +204,11 @@ if tasks:
                 )
 
                 if not response.ok:
-                    st.error(f"Falided to delete {row['title']}: {response.text}")
+                    st.error(f"Failed to delete {row['title']}: {response.text}")
 
             st.session_state.flash  = (
-                f"Deleted: {', '.join(task['title'] for task in selected_tasks)}"
+                f"Deleted: {', '.join(f"{task['title']} for {task['day']}" for task in selected_tasks)}"
             )
-            st.session_state.flash_type = "delete"
 
             st.rerun()
 
@@ -223,3 +216,86 @@ if tasks:
     st.write(generate_summary(tasks))
 else:
     st.info("No Tasks yet. Upload a schedule to get started")
+
+# ============================================================
+# NATURAL-LANGUAGE COMMANDS
+# ============================================================
+
+command = st.chat_input("Tell JAI what to change...")
+
+if command: 
+    response = requests.post(f"{API_BASE_URL}/tasks/command", json={"command": command}, timeout=60)
+    if response.ok:
+        st.session_state.pending_actions = response.json()
+    else:
+        st.error(f"JAI could not process that request: {response.text}")
+        st.session_state.pending_actions = None
+
+if st.session_state.pending_actions: 
+    result = st.session_state.pending_actions
+    actions = result.get("actions", [])
+
+    st.info(result["message"])
+
+    if actions:
+
+        st.json(result["actions"])
+        apply, cancel = st.columns(2)
+        
+        if apply.button("Apply", type="primary", width="stretch"):
+            messages = []
+            created = []
+            updated = []
+            deleted = []
+
+            for action in result["actions"]:
+                if action["action"] == "create":
+                    response = requests.post(f"{API_BASE_URL}/tasks", json=action["task"], timeout=30)
+                    if response.ok:
+                        created.append(
+                            f"{action['task']['title']} for {action['task']['day']}"
+                        )
+                    else:
+                        st.error(
+                            f"Failed to create "
+                            f"{action['task']['title']}: "
+                            f"{response.text}"
+                        )
+                elif action["action"] == "update":
+                    response = requests.put(f"{API_BASE_URL}/tasks/{action['task']['task_id']}", json=action["task"], timeout=30)
+                    if response.ok:
+                        updated.append(
+                            f"{action['task']['title']} for {action['task']['day']}"
+                        )
+                    else:
+                        st.error(
+                            f"Failed to update task: "
+                            f"{response.text}"
+                        )
+                elif action["action"] == "delete":
+                    response = requests.delete(f"{API_BASE_URL}/tasks/{action['task']['task_id']}", timeout=30)
+                    if response.ok:
+                        deleted.append(
+                            f"{action['task']['title']} for {action['task']['day']}"
+                        )
+                    else:
+                        st.error(
+                            f"Failed to delete task: "
+                            f"{response.text}"
+                        )
+
+            
+            if created: 
+                messages.append(f"Created: {', '.join(created)}")
+            if updated:
+                messages.append(f"Updated: {', '.join(updated)}")
+            if deleted: 
+                messages.append(f"Deleted: {', '.join(deleted)}")
+
+            st.session_state.flash = " | ".join(messages)
+            st.session_state.pending_actions = None 
+            st.rerun() 
+
+        if cancel.button("Cancel", width="stretch"):
+            st.session_state.pending_actions = None
+            st.rerun()
